@@ -1,0 +1,26 @@
+The original MNO-Watcher Sheet
+http://bit.do/Clone_Tech-MNO-Watcher
+
+
+Formula to import data from masternodes.online
+=IMPORTHTML("https://masternodes.online/","table", 1)
+
+
+Import and sort - there's a lot going on here. After data is downloaded from MNO it gets parsed and rearranged so it is more usable. This formula brings the cleaned up data into a new sheet. It also does a sort based upon the value in cell E1 which is selected from the column headers like ticker, marketcap, MN worth, ROI, etc. The vlookups translate that selection into a column number in the range and a TRUE/FALSE for ascending or descending value.
+=SORT(QUERY('MNO-Data'!A3:O500, "Select A, B, C, D, E, F, G, H, I, J, K, L, M, N, O"),VLOOKUP($E$1,Notes!$M$3:$O$17,2,FALSE),VLOOKUP($E$1,Notes!$M$3:$O$17,3,FALSE))
+
+
+Finding the age of the coin is tricky. MNO lists genesis block on the page for each coin. Since HTML is based on XML the IMPORTXML function is a powerful import tool. This line looks up the URL for a coin, finds the 3rd table and returns the last row in that table.
+It will return something like "Genesis block:" and	"5d 8h 29s ago / Oct 17 2018 10:24:40" across two cells
+=IMPORTXML(C476, "//table[3]/tr[last()]")
+
+
+To break apart "5d 8h 29s ago / Oct 17 2018 10:24:40" takes a couple of formulas.
+=SPLIT(E476,"ago /",FALSE)
+This puts "5d 8h 29s" in one cell and "Oct 17 2018 10:24:40" in the next. The date is a valid Google Sheet date format so we are now able to subtract it from today() to get the number of days since the genesis block.
+=TODAY()-"Oct 17 2018 10:24:40"
+
+
+To get the links for each coin, use IMPORTXML with the coin's URL. The query "//div[@class='bs-component']/p/a/@href" will find a div tag with a class atribute equal to "bs-component", and then look inside for a paragraph / <p> tag and then find links inside it which are marked with "a href"
+TRANSPOSE is just a wrapper that turns the column of data returned by IMPORTXML into a row of data.
+=TRANSPOSE(IMPORTXML(C2,"//div[@class='bs-component']/p/a/@href"))
